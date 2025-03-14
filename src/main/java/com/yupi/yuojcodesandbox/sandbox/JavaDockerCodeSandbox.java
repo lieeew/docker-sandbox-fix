@@ -32,10 +32,6 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 @Component
 public class JavaDockerCodeSandbox extends JavaCodeSandboxTemplate {
-
-    @Resource
-    private DockerClient dockerClient;
-
     private static final long TIME_OUT = 5000L;
 
     private static final Boolean FIRST_INIT = Boolean.TRUE;
