@@ -130,7 +130,7 @@ public class JavaDockerCodeSandbox extends JavaCodeSandboxTemplate {
         for (String inputArgs : inputList) {
             StopWatch stopWatch = new StopWatch();
             String[] inputArgsArray = inputArgs.split(" ");
-            String[] cmdArray = ArrayUtil.append(new String[]{"java", "-cp", "/app/" + userCodeFile.getParentFile().getName(), "Main"}, inputArgsArray);
+            String[] cmdArray = ArrayUtil.append(new String[]{"java", "-cp", "/root/" + userCodeFile.getParentFile().getName(), "Main"}, inputArgsArray);
             ExecCreateCmdResponse execCreateCmdResponse = dockerClient.execCreateCmd(containerId)
                     .withCmd(cmdArray)
                     .withAttachStderr(true)
