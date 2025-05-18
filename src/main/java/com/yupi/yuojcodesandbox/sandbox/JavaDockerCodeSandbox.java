@@ -32,22 +32,13 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 @Component
 public class JavaDockerCodeSandbox extends JavaCodeSandboxTemplate {
+
+    @Resource
+    private DockerClient dockerClient;
+
     private static final long TIME_OUT = 5000L;
 
     private static final Boolean FIRST_INIT = Boolean.TRUE;
-
-    public static void main(String[] args) {
-        JavaDockerCodeSandbox javaNativeCodeSandbox = new JavaDockerCodeSandbox();
-        ExecuteCodeRequest executeCodeRequest = new ExecuteCodeRequest();
-        executeCodeRequest.setInputList(Arrays.asList("1 2", "1 3"));
-        String code = ResourceUtil.readStr("testCode/simpleComputeArgs/Main.java", StandardCharsets.UTF_8);
-//        String code = ResourceUtil.readStr("testCode/unsafeCode/RunFileError.java", StandardCharsets.UTF_8);
-//        String code = ResourceUtil.readStr("testCode/simpleCompute/Main.java", StandardCharsets.UTF_8);
-        executeCodeRequest.setCode(code);
-        executeCodeRequest.setLanguage("java");
-        ExecuteCodeResponse executeCodeResponse = javaNativeCodeSandbox.executeCode(executeCodeRequest);
-        System.out.println(executeCodeResponse);
-    }
 
     /**
      * 3、创建容器，把文件复制到容器内
@@ -59,19 +50,6 @@ public class JavaDockerCodeSandbox extends JavaCodeSandboxTemplate {
     @Override
     public List<ExecuteMessage> runFile(File userCodeFile, List<String> inputList) {
         String userCodeParentPath = userCodeFile.getParentFile().getAbsolutePath();
-        // 获取默认的 Docker Client
-        // 获取默认的 Docker Client
-        DockerClientConfig config = DefaultDockerClientConfig.createDefaultConfigBuilder()
-                .withDockerHost("tcp://服务器IP:2376")
-                .withDockerTlsVerify(false)
-                .build();
-        DockerHttpClient httpClient = new ApacheDockerHttpClient.Builder()
-                .dockerHost(config.getDockerHost())
-                .maxConnections(100)
-                .connectionTimeout(Duration.ofSeconds(30))
-                .responseTimeout(Duration.ofSeconds(45))
-                .build();
-        DockerClient dockerClient = DockerClientImpl.getInstance(config, httpClient);
         PingCmd pingCmd = dockerClient.pingCmd();
         pingCmd.exec();
         // 拉取镜像

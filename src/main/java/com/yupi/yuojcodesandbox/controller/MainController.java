@@ -38,7 +38,7 @@ public class MainController {
     @PostMapping("/executeCode")
     ExecuteCodeResponse executeCode(@RequestBody ExecuteCodeRequest executeCodeRequest, HttpServletRequest request,
                                     HttpServletResponse response) {
-        // 基本的认证
+        // 基本的认证 为了方便单独测试而注销了
         String authHeader = request.getHeader(AUTH_REQUEST_HEADER);
 //        if (!AUTH_REQUEST_SECRET.equals(authHeader)) {
 //            response.setStatus(403);
