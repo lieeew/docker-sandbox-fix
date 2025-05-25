@@ -17,4 +17,9 @@ public class ExecuteMessage {
     private Long time;
 
     private Long memory;
+
+    /**
+     * 读取是否成功，用于判断是否需要继续读
+     */
+    private boolean isCorrect;
 }

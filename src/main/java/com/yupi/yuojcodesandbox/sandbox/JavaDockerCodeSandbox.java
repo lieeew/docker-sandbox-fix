@@ -1,17 +1,12 @@
 package com.yupi.yuojcodesandbox.sandbox;
 
-import cn.hutool.core.io.resource.ResourceUtil;
 import cn.hutool.core.util.ArrayUtil;
 import com.github.dockerjava.api.DockerClient;
-import com.github.dockerjava.api.async.ResultCallback;
 import com.github.dockerjava.api.command.*;
 import com.github.dockerjava.api.model.*;
 import com.github.dockerjava.core.*;
 import com.github.dockerjava.core.command.ExecStartResultCallback;
-import com.github.dockerjava.httpclient5.ApacheDockerHttpClient;
-import com.github.dockerjava.transport.DockerHttpClient;
-import com.yupi.yuojcodesandbox.model.ExecuteCodeRequest;
-import com.yupi.yuojcodesandbox.model.ExecuteCodeResponse;
+import com.yupi.yuojbackendmodel.model.entity.CodeQuestion;
 import com.yupi.yuojcodesandbox.model.ExecuteMessage;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
@@ -19,13 +14,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StopWatch;
 
 import javax.annotation.Resource;
-import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -45,10 +36,11 @@ public class JavaDockerCodeSandbox extends JavaCodeSandboxTemplate {
      *
      * @param userCodeFile
      * @param inputList
+     * @param codeQuestion
      * @return
      */
     @Override
-    public List<ExecuteMessage> runFile(File userCodeFile, List<String> inputList) {
+    public List<ExecuteMessage> runFile(File userCodeFile, List<String> inputList, CodeQuestion codeQuestion) {
         String userCodeParentPath = userCodeFile.getParentFile().getAbsolutePath();
         PingCmd pingCmd = dockerClient.pingCmd();
         pingCmd.exec();
