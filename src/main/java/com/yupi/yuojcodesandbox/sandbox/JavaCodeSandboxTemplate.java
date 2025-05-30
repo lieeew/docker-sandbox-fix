@@ -2,12 +2,14 @@ package com.yupi.yuojcodesandbox.sandbox;
 
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.StrUtil;
+import com.yupi.yuojbackendmodel.model.entity.CodeQuestion;
 import com.yupi.yuojcodesandbox.model.ExecuteCodeRequest;
 import com.yupi.yuojcodesandbox.model.ExecuteCodeResponse;
 import com.yupi.yuojcodesandbox.model.ExecuteMessage;
 import com.yupi.yuojcodesandbox.model.JudgeInfo;
 import com.yupi.yuojcodesandbox.utils.ProcessUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
@@ -21,9 +23,9 @@ import java.util.UUID;
 @Slf4j
 public abstract class JavaCodeSandboxTemplate implements CodeSandbox {
 
-    private static final String GLOBAL_CODE_DIR_NAME = "tmpCode";
+    private static final String GLOBAL_CODE_DIR_NAME = ".temp";
 
-    private static final String GLOBAL_JAVA_CLASS_NAME = "Main.java";
+    private static final String GLOBAL_JAVA_CLASS_NAME = "Solution.java";
 
     private static final long TIME_OUT = 5000L;
 
@@ -32,7 +34,7 @@ public abstract class JavaCodeSandboxTemplate implements CodeSandbox {
         List<String> inputList = executeCodeRequest.getInputList();
         String code = executeCodeRequest.getCode();
         String language = executeCodeRequest.getLanguage();
-
+        CodeQuestion codeQuestion = executeCodeRequest.getCodeQuestion();
 //        1. 把用户的代码保存为文件
         File userCodeFile = saveCodeToFile(code);
 
@@ -41,10 +43,10 @@ public abstract class JavaCodeSandboxTemplate implements CodeSandbox {
         System.out.println(compileFileExecuteMessage);
 
         // 3. 执行代码，得到输出结果
-        List<ExecuteMessage> executeMessageList = runFile(userCodeFile, inputList);
+        List<ExecuteMessage> executeMessageList = runFile(userCodeFile, inputList, codeQuestion);
 
 //        4. 收集整理输出结果
-        ExecuteCodeResponse outputResponse = getOutputResponse(executeMessageList);
+        ExecuteCodeResponse outputResponse = getOutputResponse(executeMessageList, compileFileExecuteMessage);
 
 //        5. 文件清理
         boolean b = deleteFile(userCodeFile);
@@ -57,6 +59,7 @@ public abstract class JavaCodeSandboxTemplate implements CodeSandbox {
 
     /**
      * 1. 把用户的代码保存为文件
+     *
      * @param code 用户代码
      * @return
      */
@@ -76,6 +79,7 @@ public abstract class JavaCodeSandboxTemplate implements CodeSandbox {
 
     /**
      * 2、编译代码
+     *
      * @param userCodeFile
      * @return
      */
@@ -85,7 +89,8 @@ public abstract class JavaCodeSandboxTemplate implements CodeSandbox {
             Process compileProcess = Runtime.getRuntime().exec(compileCmd);
             ExecuteMessage executeMessage = ProcessUtils.runProcessAndGetMessage(compileProcess, "编译");
             if (executeMessage.getExitValue() != 0) {
-                throw new RuntimeException("编译错误");
+                log.error("编译失败 {}", executeMessage.getMessage());
+                executeMessage.setErrorMessage(executeMessage.getErrorMessage().substring(userCodeFile.getParentFile().getAbsolutePath().length() + 1));
             }
             return executeMessage;
         } catch (Exception e) {
@@ -96,11 +101,13 @@ public abstract class JavaCodeSandboxTemplate implements CodeSandbox {
 
     /**
      * 3、执行文件，获得执行结果列表
+     *
      * @param userCodeFile
      * @param inputList
+     * @param codeQuestion
      * @return
      */
-    public List<ExecuteMessage> runFile(File userCodeFile, List<String> inputList) {
+    public List<ExecuteMessage> runFile(File userCodeFile, List<String> inputList, CodeQuestion codeQuestion) {
         String userCodeParentPath = userCodeFile.getParentFile().getAbsolutePath();
 
         List<ExecuteMessage> executeMessageList = new ArrayList<>();
@@ -131,15 +138,22 @@ public abstract class JavaCodeSandboxTemplate implements CodeSandbox {
 
     /**
      * 4、获取输出结果
+     *
      * @param executeMessageList
+     * @param compileFileExecuteMessage
      * @return
      */
-    public ExecuteCodeResponse getOutputResponse(List<ExecuteMessage> executeMessageList) {
+    public ExecuteCodeResponse getOutputResponse(List<ExecuteMessage> executeMessageList, ExecuteMessage compileFileExecuteMessage) {
         ExecuteCodeResponse executeCodeResponse = new ExecuteCodeResponse();
-        List<String> outputList = new ArrayList<>();
+        List<Boolean> isCorrects = new ArrayList<>();
         // 取用时最大值，便于判断是否超时
         long maxTime = 0;
         long maxMemory = 0;
+        if (StrUtil.isNotBlank(compileFileExecuteMessage.getErrorMessage())) {
+            executeCodeResponse.setMessage(compileFileExecuteMessage.getErrorMessage());
+            // 用户提交的代码执行中存在错误
+            executeCodeResponse.setStatus(3);
+        }
         for (ExecuteMessage executeMessage : executeMessageList) {
             String errorMessage = executeMessage.getErrorMessage();
             Long memory = executeMessage.getMemory();
@@ -149,7 +163,6 @@ public abstract class JavaCodeSandboxTemplate implements CodeSandbox {
                 executeCodeResponse.setStatus(3);
                 break;
             }
-            outputList.add(executeMessage.getMessage());
             Long time = executeMessage.getTime();
             if (time != null) {
                 maxTime = Math.max(maxTime, time);
@@ -157,12 +170,9 @@ public abstract class JavaCodeSandboxTemplate implements CodeSandbox {
             if (memory != null) {
                 maxMemory = Math.max(maxMemory, memory);
             }
+            isCorrects.add(executeMessage.isCorrect());
         }
-        // 正常运行完成
-        if (outputList.size() == executeMessageList.size()) {
-            executeCodeResponse.setStatus(1);
-        }
-        executeCodeResponse.setOutputList(outputList);
+        executeCodeResponse.setIsCorrect(isCorrects);
         JudgeInfo judgeInfo = new JudgeInfo();
         judgeInfo.setTime(maxTime);
         // 要借助第三方库来获取内存占用，非常麻烦，此处不做实现
@@ -173,6 +183,7 @@ public abstract class JavaCodeSandboxTemplate implements CodeSandbox {
 
     /**
      * 5、删除文件
+     *
      * @param userCodeFile
      * @return
      */
