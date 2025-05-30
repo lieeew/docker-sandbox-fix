@@ -1,6 +1,5 @@
 package com.yupi.yuojcodesandbox.sandbox;
 
-import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONUtil;
 import com.yupi.yuojbackendmodel.model.entity.CodeQuestion;
@@ -17,7 +16,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 /**
  * @author <a href="https://github.com/lieeew">leikooo</a>
